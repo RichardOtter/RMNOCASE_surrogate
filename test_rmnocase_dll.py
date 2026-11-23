@@ -56,12 +56,30 @@ class RMNOCASEExtensionTests(unittest.TestCase):
                 self.assertEqual(self.compare(prefix + a, prefix + b), expected)
                 self.assertEqual(self.compare(prefix + b, prefix + a), -expected)
 
+    def test_recorded_extended_and_arabic_probe_comparisons(self):
+        for filename, count in (
+            ("rmnocase-extended-observations.json", 79148),
+            ("rmnocase-arabic-probe-observations.json", 100),
+        ):
+            with (FOLDER / filename).open(encoding="utf-8") as file:
+                pairs = json.load(file)["pairs"]
+            self.assertEqual(len(pairs), count)
+            for index, (group, kind, a, b, expected) in enumerate(pairs):
+                prefix = f"case{index:06d}/"
+                with self.subTest(group=group, kind=kind, a=a, b=b):
+                    self.assertEqual(self.compare(prefix + a, prefix + b), expected)
+                    self.assertEqual(self.compare(prefix + b, prefix + a), -expected)
+
     def test_normalization_and_utf8_boundaries(self):
         strings = [
             "", "a", "A", "café", "CAFE", "e\u0301", "é",
             "x\u302e\u1715", "x\u1715\u302e",
             "x\u302e\u034f\u1715", "x\u1715\u034f\u302e",
             "x\u0301\u1715\u302e", "x\u302e\u0301\u1715",
+            "x\u302e\u0897\u1715", "x\u1715\u0897\u302e",
+            "x\u302e\U00010efa\u1715", "x\u1715\U00010efa\u302e",
+            "x\u302e\U00010efb\u1715", "x\u1715\U00010efb\u302e",
+            "x\u302e\U00010efc\u1715", "x\u1715\U00010efc\u302e",
             "\u1100\u1161", "가", "😀", "\ue000", "\U0010ffff",
             "a\0b", "a\0c", "a\0", "a",
         ]

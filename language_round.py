@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import random
 import shutil
 import sqlite3
 import unicodedata
@@ -20,6 +21,12 @@ PLAN = FOLDER / "rmnocase-language-plan.json"
 OBSERVATIONS = FOLDER / "rmnocase-language-observations.json"
 CONTROL = ("zzrmnocase-control/a", "zzrmnocase-control/b")
 UNICODE_VERSION = "17.0.0"
+EXTENDED_DATABASE = FOLDER / "rmnocase-extended-tests.rmtree"
+EXTENDED_PLAN = FOLDER / "rmnocase-extended-plan.json"
+EXTENDED_OBSERVATIONS = FOLDER / "rmnocase-extended-observations.json"
+ARABIC_PROBE_DATABASE = FOLDER / "rmnocase-arabic-probe.rmtree"
+ARABIC_PROBE_PLAN = FOLDER / "rmnocase-arabic-probe-plan.json"
+ARABIC_PROBE_OBSERVATIONS = FOLDER / "rmnocase-arabic-probe-observations.json"
 
 
 def character_groups():
@@ -81,6 +88,67 @@ def make_cases(groups):
     return cases
 
 
+def extended_cases():
+    if unicodedata.unidata_version != UNICODE_VERSION:
+        raise RuntimeError(f"Python must use Unicode {UNICODE_VERSION}")
+    groups = {name: [] for name in ("CJK_SUPPLEMENTARY", "HEBREW", "ARABIC", "ARMENIAN", "GEORGIAN")}
+    for codepoint in range(0x110000):
+        char = chr(codepoint)
+        name = unicodedata.name(char, "")
+        category = unicodedata.category(char)
+        if codepoint >= 0x20000 and name.startswith("CJK UNIFIED IDEOGRAPH-") and category.startswith("L"):
+            groups["CJK_SUPPLEMENTARY"].append(char)
+        if category[0] in "LM":
+            for group in ("HEBREW", "ARABIC", "ARMENIAN", "GEORGIAN"):
+                if name.startswith(group + " "):
+                    groups[group].append(char)
+                    break
+
+    cases = make_cases(groups)
+    seen = {(a, b) for _, _, a, b in cases}
+
+    def add(kind, a, b):
+        if a != b and (a, b) not in seen:
+            seen.add((a, b))
+            cases.append(["EXTENDED", kind, a, b])
+
+    rng = random.Random(20261123)
+    for _ in range(2048):
+        add("seeded_cjk", rng.choice(groups["CJK_SUPPLEMENTARY"]),
+            rng.choice(groups["CJK_SUPPLEMENTARY"]))
+    for _ in range(512):
+        a = rng.choice(rng.choice(list(groups.values())))
+        b = rng.choice(rng.choice(list(groups.values())))
+        add("seeded_mixed", a, b)
+    for a, b in (
+        ("𠮷田", "吉田"), ("𠮷野", "吉野"), ("高橋", "髙橋"),
+        ("ירושלים", "יְרוּשָׁלַיִם"), ("محمد", "مُحَمَّد"),
+        ("Հայաստան", "ՀԱՅԱՍՏԱՆ"), ("თბილისი", "თბილიში"),
+    ):
+        add("name", a, b)
+    return cases
+
+
+def arabic_probe_cases():
+    marks = ("\u0897", "\U00010efa", "\U00010efb", "\U00010efc")
+    cases = []
+    seen = set()
+
+    def add(kind, a, b):
+        if a != b and (a, b) not in seen:
+            seen.add((a, b))
+            cases.append(["ARABIC_PROBE", kind, a, b])
+
+    for mark in marks:
+        add("standalone", mark, "")
+        for base in ("a", "\u0628"):
+            add("after_base", base + mark, base)
+            for other in ("\u0301", "\u302e", *marks):
+                add("reorder", base + mark + other, base + other + mark)
+                add("boundary", base + "\u0301" + mark + other, base + mark + other)
+    return cases
+
+
 def index_order(conn):
     details = [row[3].upper() for row in conn.execute("EXPLAIN QUERY PLAN " + INDEX_QUERY)]
     if not any("IDXPLACENAME" in detail for detail in details) or any(
@@ -101,13 +169,18 @@ def decode_order(ids, positions):
     return outcomes[order]
 
 
-def prepare():
-    for path in (DATABASE, PLAN, OBSERVATIONS):
+def prepare(cases=None, *, source=None, database=None, plan_path=None, observations_path=None):
+    source = SOURCE if source is None else source
+    database = DATABASE if database is None else database
+    plan_path = PLAN if plan_path is None else plan_path
+    observations_path = OBSERVATIONS if observations_path is None else observations_path
+    for path in (database, plan_path, observations_path):
         if path.exists():
             raise FileExistsError(f"Will not overwrite {path}")
-    cases = make_cases(character_groups())
-    shutil.copyfile(SOURCE, DATABASE)
-    with closing(sqlite3.connect(DATABASE)) as conn:
+    if cases is None:
+        cases = make_cases(character_groups())
+    shutil.copyfile(source, database)
+    with closing(sqlite3.connect(database)) as conn:
         conn.create_collation("RMNOCASE", rmnocase)
         if conn.execute("SELECT COUNT(*) FROM PlaceTable WHERE PlaceType=0").fetchone()[0]:
             raise RuntimeError("The supplied database is not empty of ordinary places")
@@ -156,19 +229,22 @@ def prepare():
         "control_ids": control_ids,
         "cases": cases,
     }
-    with PLAN.open("x", encoding="utf-8", newline="\n") as file:
+    with plan_path.open("x", encoding="utf-8", newline="\n") as file:
         json.dump(plan, file, ensure_ascii=True, separators=(",", ":"))
         file.write("\n")
-    print(f"Prepared {len(cases):,} pairs and {len(rows):,} rows in {DATABASE.name}.")
+    print(f"Prepared {len(cases):,} pairs and {len(rows):,} rows in {database.name}.")
     print("The control is reversed; rebuild indexes in RootsMagic before analysis.")
 
 
-def analyze():
-    if OBSERVATIONS.exists():
-        raise FileExistsError(f"Will not overwrite {OBSERVATIONS}")
-    with PLAN.open(encoding="utf-8") as file:
+def analyze(*, database=None, plan_path=None, observations_path=None):
+    database = DATABASE if database is None else database
+    plan_path = PLAN if plan_path is None else plan_path
+    observations_path = OBSERVATIONS if observations_path is None else observations_path
+    if observations_path.exists():
+        raise FileExistsError(f"Will not overwrite {observations_path}")
+    with plan_path.open(encoding="utf-8") as file:
         plan = json.load(file)
-    with closing(sqlite3.connect(DATABASE.as_uri() + "?mode=ro", uri=True)) as conn:
+    with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as conn:
         conn.create_collation("RMNOCASE", rmnocase)
         positions = {place_id: index for index, place_id in enumerate(index_order(conn))}
     if decode_order(plan["control_ids"], positions) != -1:
@@ -185,7 +261,7 @@ def analyze():
         groups[group] += 1
         if observed != predicted:
             mismatches.append((group, kind, a, b, observed, predicted))
-    with OBSERVATIONS.open("x", encoding="utf-8", newline="\n") as file:
+    with observations_path.open("x", encoding="utf-8", newline="\n") as file:
         json.dump(
             {"unicode_version": plan["unicode_version"], "pairs": observations},
             file, ensure_ascii=True, separators=(",", ":"),
@@ -203,5 +279,24 @@ def analyze():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("prepare", "analyze"))
+    rounds = parser.add_mutually_exclusive_group()
+    rounds.add_argument("--extended", action="store_true", help="use the supplementary CJK and name-script round")
+    rounds.add_argument("--arabic-probe", action="store_true", help="probe Arabic mark normalization boundaries")
     args = parser.parse_args()
-    {"prepare": prepare, "analyze": analyze}[args.action]()
+    if args.extended or args.arabic_probe:
+        database, plan, observations, make_round = (
+            (EXTENDED_DATABASE, EXTENDED_PLAN, EXTENDED_OBSERVATIONS, extended_cases)
+            if args.extended else
+            (ARABIC_PROBE_DATABASE, ARABIC_PROBE_PLAN, ARABIC_PROBE_OBSERVATIONS, arabic_probe_cases)
+        )
+        paths = {
+            "database": database,
+            "plan_path": plan,
+            "observations_path": observations,
+        }
+        if args.action == "prepare":
+            prepare(make_round(), **paths)
+        else:
+            analyze(**paths)
+    else:
+        {"prepare": prepare, "analyze": analyze}[args.action]()

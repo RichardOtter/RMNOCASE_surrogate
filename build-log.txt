@@ -7,7 +7,7 @@ C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools>cd C:\Users\rotter\
 
 C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate>msbuild RMNOCASE_surrogate.vcxproj /t:Rebuild /p:Configuration=Release /p:Platform=x64
 MSBuild version 18.12.3-1.26559.12+8df097b6f for .NET Framework
-Build started 2026-11-23 2:29:48 PM.
+Build started 2026-11-23 3:32:36 PM.
 
 Project "C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\RMNOCASE_surrogate.vcxproj" on
 node 1 (Rebuild target(s)).
@@ -57,14 +57,12 @@ Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:01.08
+Time Elapsed 00:00:00.95
 
 C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate>
 
-
-MD5                               size          name
-3762d1d32f8a0d04798eab5284d91477	448,000 bytes	RMNOCASE_surrogate.dll	
-
+  MD5                                size           name
+	6cb10619ea91dd63cd7c85855b482ea7	448,000 bytes	RMNOCASE_surrogate.dll	
 
 in powershell-
 (Get-Item '.\x64\Release\RMNOCASE_surrogate.dll').VersionInfo.FileDescription

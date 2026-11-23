@@ -5,12 +5,22 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 import language_round
 
 
 class LanguageRoundTests(unittest.TestCase):
+    def test_extended_cases_cover_supplementary_cjk_and_script_marks(self):
+        cases = language_round.extended_cases()
+        ideographs = {
+            char
+            for group, _, a, b in cases if group == "CJK_SUPPLEMENTARY"
+            for char in (a, b)
+        }
+        self.assertEqual(len(ideographs), 74400)
+        self.assertIn(["HEBREW", "unmarked", "\u05b0", ""], cases)
+        self.assertIn(["ARABIC", "unmarked", "\u064e", ""], cases)
+
     def test_round_requires_rebuild_and_preserves_source(self):
         cases = [
             ["LATIN", "example", "Müller", "muller"],
@@ -36,28 +46,21 @@ class LanguageRoundTests(unittest.TestCase):
                 conn.execute("CREATE INDEX idxPlaceName ON PlaceTable(Name)")
                 conn.commit()
             original = source.read_bytes()
-            with (
-                patch.object(language_round, "SOURCE", source),
-                patch.object(language_round, "DATABASE", database),
-                patch.object(language_round, "PLAN", plan),
-                patch.object(language_round, "OBSERVATIONS", observations),
-                patch.object(language_round, "character_groups", return_value={}),
-                patch.object(language_round, "make_cases", return_value=cases),
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
-                language_round.prepare()
+            paths = {"database": database, "plan_path": plan, "observations_path": observations}
+            with contextlib.redirect_stdout(io.StringIO()):
+                language_round.prepare(cases, source=source, **paths)
                 with self.assertRaisesRegex(RuntimeError, "rebuild indexes"):
-                    language_round.analyze()
+                    language_round.analyze(**paths)
                 with contextlib.closing(sqlite3.connect(database)) as conn:
                     conn.create_collation("RMNOCASE", language_round.rmnocase)
                     conn.execute("REINDEX RMNOCASE")
                     conn.commit()
-                language_round.analyze()
+                language_round.analyze(**paths)
                 with observations.open(encoding="utf-8") as file:
                     pairs = json.load(file)["pairs"]
                 self.assertEqual([pair[-1] for pair in pairs], [0, -1, 1])
                 with self.assertRaises(FileExistsError):
-                    language_round.prepare()
+                    language_round.prepare(cases, source=source, **paths)
             self.assertEqual(source.read_bytes(), original)
 
 

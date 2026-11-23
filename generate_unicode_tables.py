@@ -3,7 +3,7 @@
 import unicodedata
 from pathlib import Path
 
-from insert_test_data import ROOTSMAGIC_CASEFOLD_IDENTITY
+from insert_test_data import ROOTSMAGIC_CASEFOLD_IDENTITY, ROOTSMAGIC_MARK_BOUNDARIES
 
 
 UNICODE_VERSION = "17.0.0"
@@ -29,8 +29,8 @@ def main():
         if normalized != char:
             mappings.append((codepoint, len(values), len(normalized)))
             values.extend(map(ord, normalized))
-        combining = unicodedata.combining(char)
-        nonspacing = unicodedata.category(char) == "Mn"
+        combining = 0 if char in ROOTSMAGIC_MARK_BOUNDARIES else unicodedata.combining(char)
+        nonspacing = char not in ROOTSMAGIC_MARK_BOUNDARIES and unicodedata.category(char) == "Mn"
         if combining or nonspacing:
             properties.append((codepoint, combining, int(nonspacing)))
 

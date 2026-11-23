@@ -41,6 +41,16 @@ and the RootsMagic results are in
 The unmarked forms in the saved plan were generated using the approximation
 as it existed before this round's corrections.
 
+The extended round selected all 74,400 assigned supplementary CJK unified
+ideographs in Unicode 17, plus characters whose Unicode names begin `HEBREW`,
+`ARABIC`, `ARMENIAN`, or `GEORGIAN` and whose categories are letters or
+marks. It used the same neighboring-character and variant selection, plus
+2,048 seeded distant CJK pairs, 509 distinct seeded mixed-script pairs, and
+seven additional name examples. The earlier hand-picked examples were also
+included. The exact cases, including unmarked forms produced by the
+approximation at the time, are in
+[rmnocase-extended-plan.json](./rmnocase-extended-plan.json).
+
 This selection does not cover every character used in historical names,
 every supplementary Japanese ideograph, or every combination of characters.
 Each selected character being represented does not mean every pair or every
@@ -52,8 +62,9 @@ name containing it was tested.
 
 1. Applying Python's `casefold()`, except for eight capital letters that
    RootsMagic left unchanged in the language probes.
-2. Decomposing characters with Unicode NFD.
-3. Removing nonspacing marks (Unicode category `Mn`).
+2. Decomposing characters with Unicode NFD, treating four observed Arabic
+   marks (`U+0897`, `U+10EFA`, `U+10EFB`, and `U+10EFC`) as boundaries.
+3. Removing nonspacing marks (Unicode category `Mn`), except those four.
 4. Comparing the resulting strings.
 
 For example, the approximation considers `cafe` and `café` equal. It does not
@@ -69,11 +80,12 @@ before accessing an index that uses `RMNOCASE`. For example:
 
 ```python
 import sqlite3
+from pathlib import Path
 
 db = sqlite3.connect("disposable.rmtree")
 db.enable_load_extension(True)
 try:
-    db.load_extension(r"C:\Users\rotter\dev\Genealogy\repo Genealogy-scripts\RMNOCASE_surrogate\x64\Release\RMNOCASE_surrogate.dll")
+    db.load_extension(str(Path(r"x64\Release\RMNOCASE_surrogate.dll").resolve()))
 finally:
     db.enable_load_extension(False)
 ```
@@ -82,11 +94,11 @@ In the SQLite command-line shell, use `.load` followed by the DLL's path in
 quotes. This is a SQLite extension, not a RootsMagic plugin; it does not change
 RootsMagic's own collation. Only load trusted extensions.
 
-The DLL was tested against the updated Python Unicode 17.0.0 comparator for every
+An earlier DLL build was tested against the then-current Python Unicode 17.0.0 comparator for every
 1,112,064 valid Unicode scalar, 1,112,063 adjacent-scalar comparisons, and
 100,000 seeded combining-sequence comparisons. Its regression tests also
-check the 1,024 original and 34,776 language-round RootsMagic observations,
-extension loading under a
+check the 1,024 original, 34,776 language-round, 79,148 extended-round, and
+100 focused-probe RootsMagic observations, extension loading under a
 different filename, and SQLite index order. Agreement with Python over these
 tests is not proof of equivalence to RootsMagic over all strings.
 
@@ -123,12 +135,12 @@ files to `RMNOCASE.298CB660\x64\Release`, relative to the project folder.
 Any older DLL in the project folder is not updated by this build.
 The header can be regenerated with
 `python generate_unicode_tables.py` using a Python installation with Unicode
-17.0.0; the generator rejects other Unicode versions and uses the eight
-case-fold exceptions defined in `insert_test_data.py`. Run the DLL and Python
+17.0.0; the generator rejects other Unicode versions and uses the observed
+case-fold and mark exceptions defined in `insert_test_data.py`. Run the DLL and Python
 regressions with:
 
 ```powershell
-python -m unittest discover -s 'RMNOCASE_surrogate' -p 'test_*.py'
+python -m unittest discover -s . -p 'test_*.py'
 ```
 
 Run this test command from the repository root with Python using Unicode
@@ -240,12 +252,35 @@ existing working database, plan, or observations. The saved plan maps the
 case IDs to the database rows; keep it if the experiment needs to be audited
 or resumed.
 
+### Extended characters and Arabic mark probe
+
+After RootsMagic 12.1.3.0 for Windows rebuilt another disposable database,
+the reversed control was restored and 79,148 comparisons were recorded in
+[rmnocase-extended-observations.json](./rmnocase-extended-observations.json):
+74,399 supplementary CJK adjacent pairs, 246 Hebrew, 1,407 Arabic, 172
+Armenian, 343 Georgian, 17 earlier examples, and 2,564 additional pairs.
+The earlier approximation differed on ten pairs involving four Arabic marks.
+
+A separate 100-pair probe compared those marks alone, after Latin and Arabic
+bases, and with other combining marks. Its restored control and results are
+recorded in [rmnocase-arabic-probe-plan.json](./rmnocase-arabic-probe-plan.json)
+and [rmnocase-arabic-probe-observations.json](./rmnocase-arabic-probe-observations.json).
+Treating the four marks as retained, combining-class-zero boundaries matches
+all the probe observations as well as all extended and previous recorded pairs.
+That is an evidence-based approximation, not proof of RootsMagic's internal
+Unicode version or of its behavior in every surrounding sequence.
+
+Use `python language_round.py prepare --extended` or `--arabic-probe` to
+prepare a round, then rebuild its indexes in RootsMagic and run the matching
+`analyze` command with the same option. The script refuses to overwrite an
+existing database, plan, or observations.
+
 [test_insert_test_data.py](./test_insert_test_data.py) retains the original
 order, selected pairwise observations, and all 1,024 seeded observations as
 regression tests. From the repository root, run them with:
 
 ```powershell
-python -m unittest discover -s 'RMNOCASE_surrogate' -p 'test_insert_test_data.py'
+python -m unittest discover -s . -p 'test_insert_test_data.py'
 ```
 
 The current stopping point is zero unexplained mismatches across these targeted

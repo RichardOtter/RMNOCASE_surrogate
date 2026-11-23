@@ -124,6 +124,20 @@ class InsertTestDataTests(unittest.TestCase):
                 self.assertEqual(insert_test_data.rmnocase(prefix + left, prefix + right), expected)
                 self.assertEqual(insert_test_data.rmnocase(prefix + right, prefix + left), -expected)
 
+    def test_rootsmagic_extended_and_arabic_probe_pairs(self):
+        for filename, count in (
+            ("rmnocase-extended-observations.json", 79148),
+            ("rmnocase-arabic-probe-observations.json", 100),
+        ):
+            with Path(__file__).with_name(filename).open(encoding="utf-8") as file:
+                pairs = json.load(file)["pairs"]
+            self.assertEqual(len(pairs), count)
+            for index, (group, kind, left, right, expected) in enumerate(pairs):
+                prefix = f"case{index:06d}/"
+                with self.subTest(group=group, kind=kind, left=left, right=right):
+                    self.assertEqual(insert_test_data.rmnocase(prefix + left, prefix + right), expected)
+                    self.assertEqual(insert_test_data.rmnocase(prefix + right, prefix + left), -expected)
+
     def test_inserts_into_database_with_rmnocase_index(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parent) as directory:
             db_path = Path(directory) / "test.rmtree"

@@ -178,6 +178,9 @@ ROOTSMAGIC_CASEFOLD_IDENTITY = frozenset(
     "\u1c89\ua7cb\ua7cc\ua7ce\ua7d2\ua7d4\ua7da\ua7dc"
 )
 
+# RootsMagic retained these marks and did not reorder them with adjacent marks.
+ROOTSMAGIC_MARK_BOUNDARIES = frozenset("\u0897\U00010efa\U00010efb\U00010efc")
+
 
 def rmnocase_key(value):
     """Approximate the observed case- and accent-insensitive ordering."""
@@ -185,9 +188,17 @@ def rmnocase_key(value):
         char if char in ROOTSMAGIC_CASEFOLD_IDENTITY else char.casefold()
         for char in value
     )
+    segments = []
+    start = 0
+    for index, char in enumerate(folded):
+        if char in ROOTSMAGIC_MARK_BOUNDARIES:
+            segments.append(unicodedata.normalize("NFD", folded[start:index]))
+            segments.append(char)
+            start = index + 1
+    segments.append(unicodedata.normalize("NFD", folded[start:]))
     return "".join(
-        char for char in unicodedata.normalize("NFD", folded)
-        if unicodedata.category(char) != "Mn"
+        char for segment in segments for char in segment
+        if char in ROOTSMAGIC_MARK_BOUNDARIES or unicodedata.category(char) != "Mn"
     )
 
 
