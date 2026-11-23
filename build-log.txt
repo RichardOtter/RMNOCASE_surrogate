@@ -1,0 +1,72 @@
+**********************************************************************
+** Visual Studio 2026 Developer Command Prompt v18.12.1
+** Copyright (c) 2026 Microsoft Corporation
+**********************************************************************
+
+C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools>cd C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate
+
+C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate>msbuild RMNOCASE_surrogate.vcxproj /t:Rebuild /p:Configuration=Release /p:Platform=x64
+MSBuild version 18.12.3-1.26559.12+8df097b6f for .NET Framework
+Build started 2026-11-23 2:29:48 PM.
+
+Project "C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\RMNOCASE_surrogate.vcxproj" on
+node 1 (Rebuild target(s)).
+CoreClean:
+  Creating directory "RMNOCASE.298CB660\x64\Release\".
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://ak
+  a.ms/cpp/structured-output for more details.
+  Creating directory "C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Release\".
+  Creating directory "RMNOCASE.298CB660\x64\Release\RMNOCASE.298CB660.tlog\".
+InitializeBuildStatus:
+  Creating "RMNOCASE.298CB660\x64\Release\RMNOCASE.298CB660.tlog\unsuccessfulbuild" because "AlwaysCreate" was specifie
+  d.
+  Touching "RMNOCASE.298CB660\x64\Release\RMNOCASE.298CB660.tlog\unsuccessfulbuild".
+ClCompile:
+  C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.52.37025\bin\HostX64\x64\CL.exe /c /nol
+  ogo /W4 /WX /diagnostics:column /O2 /D _WINDLL /Gm- /EHsc /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /st
+  d:c11 /Fo"RMNOCASE.298CB660\x64\Release\\" /Fd"RMNOCASE.298CB660\x64\Release\vc145.pdb" /external:W4 /Gd /TC /FC /err
+  orReport:queue rmnocase.c
+  rmnocase.c
+ResourceCompile:
+  C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\rc.exe /l"0x0409" /nologo /fo"RMNOCASE.298CB660\x64\Relea
+  se\rmnocase.res" rmnocase.rc
+Link:
+  C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.52.37025\bin\HostX64\x64\link.exe /ERRO
+  RREPORT:QUEUE /OUT:"C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Release\RMNOCA
+  SE_surrogate.dll" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib sh
+  ell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess=
+  'false'" /manifest:embed /PDB:"C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Rel
+  ease\RMNOCASE_surrogate.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\rotter\dev\SQLite\SQLite extensions\Co
+  llation\repo RMNOCASE_surrogate\x64\Release\RMNOCASE_surrogate.lib" /MACHINE:X64 /DLL RMNOCASE.298CB660\x64\Release\r
+  mnocase.res
+  RMNOCASE.298CB660\x64\Release\rmnocase.obj
+     Creating library C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Release\RMNOCA
+  SE_surrogate.lib and object C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Releas
+  e\RMNOCASE_surrogate.exp
+  RMNOCASE_surrogate.vcxproj -> C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\x64\Rele
+  ase\RMNOCASE_surrogate.dll
+FinalizeBuildStatus:
+  Deleting file "RMNOCASE.298CB660\x64\Release\RMNOCASE.298CB660.tlog\unsuccessfulbuild".
+  Touching "RMNOCASE.298CB660\x64\Release\RMNOCASE.298CB660.tlog\RMNOCASE_surrogate.lastbuildstate".
+Done Building Project "C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate\RMNOCASE_surrogat
+e.vcxproj" (Rebuild target(s)).
+
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.08
+
+C:\Users\rotter\dev\SQLite\SQLite extensions\Collation\repo RMNOCASE_surrogate>
+
+
+MD5                               size          name
+3762d1d32f8a0d04798eab5284d91477	448,000 bytes	RMNOCASE_surrogate.dll	
+
+
+in powershell-
+(Get-Item '.\x64\Release\RMNOCASE_surrogate.dll').VersionInfo.FileDescription
+
+to see full file description in version resource for dll

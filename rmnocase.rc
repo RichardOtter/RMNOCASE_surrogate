@@ -13,7 +13,7 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "RMNOCASE surrogate SQLite collation\0"
+            VALUE "FileDescription", "https://github.com/RichardOtter/RMNOCASE_surrogate\0"
             VALUE "FileVersion", "0.1.0.0\0"
             VALUE "InternalName", "RMNOCASE_surrogate\0"
             VALUE "OriginalFilename", "RMNOCASE_surrogate.dll\0"
