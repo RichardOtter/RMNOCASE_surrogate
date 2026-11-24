@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Richard J Otter
+Copyright (c) 2026 Richard J Otter  <https://github.com/RichardOtter/RMNOCASE_surrogate>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
